@@ -25,7 +25,7 @@ class MapFragment : Fragment(), OnMapReadyCallback {
     private val sharedViewModel: SharedViewModel by activityViewModels()
 
     companion object {
-        private val DEFAULT_COORDINATE = LatLng(2.924897, 101.641824) // Default location
+        private val DEFAULT_COORDINATE = LatLng(2.924897, 101.641824) // Default coordinate
     }
 
     override fun onCreateView(
