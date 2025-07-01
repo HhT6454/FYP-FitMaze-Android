@@ -195,7 +195,19 @@ class BluetoothSensorFragment : Fragment(), SensorEventListener, PermissionResul
             REQUEST_BLUETOOTH_CONNECT -> {
                 if (grantResults.isNotEmpty() && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
                     Log.d("Bluetooth", "BLUETOOTH_CONNECT permission granted.")
-                    // Reinitialize Bluetooth functionality if needed
+                    if (::bluetoothAdapter.isInitialized && bluetoothAdapter.isEnabled) {
+                        try {
+                            bluetoothLeAdvertiser = bluetoothAdapter.bluetoothLeAdvertiser
+                            Toast.makeText(requireContext(), "Bluetooth initialized successfully", Toast.LENGTH_SHORT).show()
+                            Log.d("BLE", "Initialized bluetoothLeAdvertiser after permission grant")
+                            if (::bluetoothLeAdvertiser.isInitialized) {
+                                startGattServer()
+                            }
+                        } catch (e: Exception) {
+                            Toast.makeText(requireContext(), "Failed to initialize BLE advertiser", Toast.LENGTH_LONG).show()
+                            Log.e("BLE", "Error initializing bluetoothLeAdvertiser: ${e.message}", e)
+                        }
+                    }
                 } else {
                     requireActivity().runOnUiThread {
                         Toast.makeText(requireContext(), "Bluetooth connect permission denied.", Toast.LENGTH_SHORT).show()
@@ -205,7 +217,9 @@ class BluetoothSensorFragment : Fragment(), SensorEventListener, PermissionResul
             REQUEST_BLUETOOTH_ADVERTISE -> {
                 if (grantResults.isNotEmpty() && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
                     Log.d("Bluetooth", "BLUETOOTH_ADVERTISE permission granted.")
-                    // Retry advertising
+                    if (::bluetoothAdapter.isInitialized && bluetoothAdapter.isEnabled && ::bluetoothLeAdvertiser.isInitialized) {
+                        startBleAdvertising()
+                    }
                 } else {
                     requireActivity().runOnUiThread {
                         Toast.makeText(requireContext(), "Bluetooth advertise permission denied.", Toast.LENGTH_SHORT).show()
@@ -223,35 +237,84 @@ class BluetoothSensorFragment : Fragment(), SensorEventListener, PermissionResul
             Log.e("BLE", "Bluetooth adapter not initialized")
             return false
         }
+        if (!checkBluetoothConnectPermission()) {
+            requestBluetoothConnectPermission()
+            Toast.makeText(requireContext(), "Please grant Bluetooth permission to enable Bluetooth", Toast.LENGTH_LONG).show()
+            Log.w("BLE", "BLUETOOTH_CONNECT permission required")
+            return false
+        }
         if (!bluetoothAdapter.isEnabled && !hasPromptedBluetooth) {
             Toast.makeText(requireContext(), "Bluetooth is disabled, enabling...", Toast.LENGTH_SHORT).show()
             val enableBtIntent = Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE)
-            enableBluetoothLauncher.launch(enableBtIntent)
-            hasPromptedBluetooth = true
+            try {
+                enableBluetoothLauncher.launch(enableBtIntent)
+                hasPromptedBluetooth = true
+            } catch (e: SecurityException) {
+                Toast.makeText(requireContext(), "Bluetooth permission denied, please grant it", Toast.LENGTH_LONG).show()
+                Log.e("BLE", "SecurityException in checkBluetoothAndPrompt: ${e.message}", e)
+                requestBluetoothConnectPermission()
+            }
             return false
         }
-        return bluetoothAdapter.isEnabled
+        // Initialize bluetoothLeAdvertiser if not already initialized
+        if (!::bluetoothLeAdvertiser.isInitialized && bluetoothAdapter.isEnabled) {
+            try {
+                bluetoothLeAdvertiser = bluetoothAdapter.bluetoothLeAdvertiser
+                Log.d("BLE", "Initialized bluetoothLeAdvertiser in checkBluetoothAndPrompt")
+            } catch (e: Exception) {
+                Toast.makeText(requireContext(), "Failed to initialize BLE advertiser", Toast.LENGTH_LONG).show()
+                Log.e("BLE", "Error initializing bluetoothLeAdvertiser: ${e.message}", e)
+                return false
+            }
+        }
+        return bluetoothAdapter.isEnabled && ::bluetoothLeAdvertiser.isInitialized
     }
 
     private fun initializeBluetooth() {
         val bluetoothManager = requireActivity().getSystemService(Context.BLUETOOTH_SERVICE) as BluetoothManager
         bluetoothAdapter = bluetoothManager.adapter
+        if (!checkBluetoothConnectPermission()) {
+            requestBluetoothConnectPermission()
+            Toast.makeText(requireContext(), "Please grant Bluetooth permission to initialize Bluetooth", Toast.LENGTH_LONG).show()
+            Log.w("BLE", "BLUETOOTH_CONNECT permission required")
+            return
+        }
         if (!bluetoothAdapter.isEnabled && !hasPromptedBluetooth) {
             Toast.makeText(requireContext(), "Bluetooth is disabled, enabling...", Toast.LENGTH_SHORT).show()
             val enableBtIntent = Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE)
-            enableBluetoothLauncher.launch(enableBtIntent)
-            hasPromptedBluetooth = true
+            try {
+                enableBluetoothLauncher.launch(enableBtIntent)
+                hasPromptedBluetooth = true
+            } catch (e: SecurityException) {
+                Toast.makeText(requireContext(), "Bluetooth permission denied, please grant it", Toast.LENGTH_LONG).show()
+                Log.e("BLE", "SecurityException in initializeBluetooth: ${e.message}", e)
+                requestBluetoothConnectPermission()
+            }
             return
         }
         if (bluetoothAdapter.isEnabled) {
-            bluetoothLeAdvertiser = bluetoothAdapter.bluetoothLeAdvertiser
-            Toast.makeText(requireContext(), "Bluetooth initialized successfully", Toast.LENGTH_SHORT).show()
-            Log.d("BLE", "Bluetooth initialized")
+            try {
+                bluetoothLeAdvertiser = bluetoothAdapter.bluetoothLeAdvertiser
+                Toast.makeText(requireContext(), "Bluetooth initialized successfully", Toast.LENGTH_SHORT).show()
+                Log.d("BLE", "Bluetooth initialized")
+            } catch (e: Exception) {
+                Toast.makeText(requireContext(), "Failed to initialize BLE advertiser", Toast.LENGTH_LONG).show()
+                Log.e("BLE", "Error initializing bluetoothLeAdvertiser: ${e.message}", e)
+            }
         }
     }
 
     // region Advertising parts
     private fun startBleAdvertising() {
+        if (!checkBluetoothAdvertisePermission()) {
+            requestBluetoothAdvertisePermission()
+            return
+        }
+        if (!::bluetoothLeAdvertiser.isInitialized) {
+            Toast.makeText(requireContext(), "Bluetooth advertiser not initialized", Toast.LENGTH_LONG).show()
+            Log.e("BLE", "bluetoothLeAdvertiser not initialized")
+            return
+        }
         val advertiseSettings = AdvertiseSettings.Builder()
             .setAdvertiseMode(AdvertiseSettings.ADVERTISE_MODE_BALANCED)
             .setConnectable(true)
@@ -266,10 +329,6 @@ class BluetoothSensorFragment : Fragment(), SensorEventListener, PermissionResul
             .addManufacturerData(manufacturerId, manufacturerData)
             .build()
 
-        if (!checkBluetoothAdvertisePermission()) {
-            requestBluetoothAdvertisePermission()
-            return
-        }
         bluetoothLeAdvertiser.startAdvertising(advertiseSettings, advertiseData, advertiseCallback)
         advertiseStatusTextView.text = getString(R.string.controller_status_active)
         Log.d("BLE", "Advertising started")
