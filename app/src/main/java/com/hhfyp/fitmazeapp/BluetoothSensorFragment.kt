@@ -157,7 +157,7 @@ class BluetoothSensorFragment : Fragment(), SensorEventListener, PermissionResul
             if (::bluetoothAdapter.isInitialized && bluetoothAdapter.isEnabled && ::bluetoothLeAdvertiser.isInitialized) {
                 startGattServer()
             } else {
-                Toast.makeText(requireContext(), "Cannot start GATT server: Bluetooth not ready", Toast.LENGTH_LONG).show()
+                Toast.makeText(requireContext(), "Bluetooth is not ready, please enable it", Toast.LENGTH_LONG).show()
                 Log.e("BLE", "Bluetooth not enabled or BLE not initialized, skipping GATT server start")
             }
         } catch (e: Exception) {
@@ -198,19 +198,19 @@ class BluetoothSensorFragment : Fragment(), SensorEventListener, PermissionResul
                     if (::bluetoothAdapter.isInitialized && bluetoothAdapter.isEnabled) {
                         try {
                             bluetoothLeAdvertiser = bluetoothAdapter.bluetoothLeAdvertiser
-                            Toast.makeText(requireContext(), "Bluetooth initialized successfully", Toast.LENGTH_SHORT).show()
+                            Toast.makeText(requireContext(), "Bluetooth ready", Toast.LENGTH_SHORT).show()
                             Log.d("BLE", "Initialized bluetoothLeAdvertiser after permission grant")
                             if (::bluetoothLeAdvertiser.isInitialized) {
                                 startGattServer()
                             }
                         } catch (e: Exception) {
-                            Toast.makeText(requireContext(), "Failed to initialize BLE advertiser", Toast.LENGTH_LONG).show()
+                            //Toast.makeText(requireContext(), "Failed to initialize BLE advertiser", Toast.LENGTH_LONG).show()
                             Log.e("BLE", "Error initializing bluetoothLeAdvertiser: ${e.message}", e)
                         }
                     }
                 } else {
                     requireActivity().runOnUiThread {
-                        Toast.makeText(requireContext(), "Bluetooth connect permission denied.", Toast.LENGTH_SHORT).show()
+                        Toast.makeText(requireContext(), "Please allow Nearby Devices permission in settings to use this app", Toast.LENGTH_SHORT).show()
                     }
                 }
             }
@@ -222,7 +222,7 @@ class BluetoothSensorFragment : Fragment(), SensorEventListener, PermissionResul
                     }
                 } else {
                     requireActivity().runOnUiThread {
-                        Toast.makeText(requireContext(), "Bluetooth advertise permission denied.", Toast.LENGTH_SHORT).show()
+                        Toast.makeText(requireContext(), "Please allow Nearby Devices permission in settings to use this app", Toast.LENGTH_SHORT).show()
                     }
                 }
             }
@@ -239,7 +239,7 @@ class BluetoothSensorFragment : Fragment(), SensorEventListener, PermissionResul
         }
         if (!checkBluetoothConnectPermission()) {
             requestBluetoothConnectPermission()
-            Toast.makeText(requireContext(), "Please grant Bluetooth permission to enable Bluetooth", Toast.LENGTH_LONG).show()
+            //Toast.makeText(requireContext(), "Please grant Bluetooth permission to enable Bluetooth", Toast.LENGTH_LONG).show()
             Log.w("BLE", "BLUETOOTH_CONNECT permission required")
             return false
         }
@@ -250,7 +250,7 @@ class BluetoothSensorFragment : Fragment(), SensorEventListener, PermissionResul
                 enableBluetoothLauncher.launch(enableBtIntent)
                 hasPromptedBluetooth = true
             } catch (e: SecurityException) {
-                Toast.makeText(requireContext(), "Bluetooth permission denied, please grant it", Toast.LENGTH_LONG).show()
+                //Toast.makeText(requireContext(), "Bluetooth permission denied, please grant it", Toast.LENGTH_LONG).show()
                 Log.e("BLE", "SecurityException in checkBluetoothAndPrompt: ${e.message}", e)
                 requestBluetoothConnectPermission()
             }
@@ -262,7 +262,7 @@ class BluetoothSensorFragment : Fragment(), SensorEventListener, PermissionResul
                 bluetoothLeAdvertiser = bluetoothAdapter.bluetoothLeAdvertiser
                 Log.d("BLE", "Initialized bluetoothLeAdvertiser in checkBluetoothAndPrompt")
             } catch (e: Exception) {
-                Toast.makeText(requireContext(), "Failed to initialize BLE advertiser", Toast.LENGTH_LONG).show()
+                //Toast.makeText(requireContext(), "Failed to initialize BLE advertiser", Toast.LENGTH_LONG).show()
                 Log.e("BLE", "Error initializing bluetoothLeAdvertiser: ${e.message}", e)
                 return false
             }
@@ -275,7 +275,7 @@ class BluetoothSensorFragment : Fragment(), SensorEventListener, PermissionResul
         bluetoothAdapter = bluetoothManager.adapter
         if (!checkBluetoothConnectPermission()) {
             requestBluetoothConnectPermission()
-            Toast.makeText(requireContext(), "Please grant Bluetooth permission to initialize Bluetooth", Toast.LENGTH_LONG).show()
+            //Toast.makeText(requireContext(), "Please grant Bluetooth permission to initialize Bluetooth", Toast.LENGTH_LONG).show()
             Log.w("BLE", "BLUETOOTH_CONNECT permission required")
             return
         }
@@ -286,7 +286,7 @@ class BluetoothSensorFragment : Fragment(), SensorEventListener, PermissionResul
                 enableBluetoothLauncher.launch(enableBtIntent)
                 hasPromptedBluetooth = true
             } catch (e: SecurityException) {
-                Toast.makeText(requireContext(), "Bluetooth permission denied, please grant it", Toast.LENGTH_LONG).show()
+                //Toast.makeText(requireContext(), "Bluetooth permission denied, please grant it", Toast.LENGTH_LONG).show()
                 Log.e("BLE", "SecurityException in initializeBluetooth: ${e.message}", e)
                 requestBluetoothConnectPermission()
             }
@@ -298,7 +298,7 @@ class BluetoothSensorFragment : Fragment(), SensorEventListener, PermissionResul
                 Toast.makeText(requireContext(), "Bluetooth initialized successfully", Toast.LENGTH_SHORT).show()
                 Log.d("BLE", "Bluetooth initialized")
             } catch (e: Exception) {
-                Toast.makeText(requireContext(), "Failed to initialize BLE advertiser", Toast.LENGTH_LONG).show()
+                //Toast.makeText(requireContext(), "Failed to initialize BLE advertiser", Toast.LENGTH_LONG).show()
                 Log.e("BLE", "Error initializing bluetoothLeAdvertiser: ${e.message}", e)
             }
         }
@@ -375,11 +375,11 @@ class BluetoothSensorFragment : Fragment(), SensorEventListener, PermissionResul
                         super.onConnectionStateChange(device, status, newState)
                         if (newState == BluetoothProfile.STATE_CONNECTED) {
                             if (!checkBluetoothConnectPermission()) {
-                                Toast.makeText(
-                                    requireContext(),
-                                    "Permission issue during connection",
-                                    Toast.LENGTH_LONG
-                                ).show()
+//                                Toast.makeText(
+//                                    requireContext(),
+//                                    "Permission issue during connection",
+//                                    Toast.LENGTH_LONG
+//                                ).show()
                                 Log.e("BLE", "Missing BLUETOOTH_CONNECT permission during connection")
                                 requestBluetoothConnectPermission()
                                 return
@@ -413,7 +413,7 @@ class BluetoothSensorFragment : Fragment(), SensorEventListener, PermissionResul
                             requireActivity().runOnUiThread {
                                 Toast.makeText(
                                     requireContext(),
-                                    "Connection error, status: $status",
+                                    "Failed to connect to device, please try again",
                                     Toast.LENGTH_LONG
                                 ).show()
                             }
@@ -427,22 +427,22 @@ class BluetoothSensorFragment : Fragment(), SensorEventListener, PermissionResul
                     override fun onServiceAdded(status: Int, service: BluetoothGattService?) {
                         super.onServiceAdded(status, service)
                         if (status == BluetoothGatt.GATT_SUCCESS) {
-                            requireActivity().runOnUiThread {
-                                Toast.makeText(
-                                    requireContext(),
-                                    "GATT service added successfully",
-                                    Toast.LENGTH_SHORT
-                                ).show()
-                            }
+//                            requireActivity().runOnUiThread {
+//                                Toast.makeText(
+//                                    requireContext(),
+//                                    "GATT service added successfully",
+//                                    Toast.LENGTH_SHORT
+//                                ).show()
+//                            }
                             Log.d("BLE", "GATT service added successfully")
                         } else {
-                            requireActivity().runOnUiThread {
-                                Toast.makeText(
-                                    requireContext(),
-                                    "Failed to add GATT service, status: $status",
-                                    Toast.LENGTH_LONG
-                                ).show()
-                            }
+//                            requireActivity().runOnUiThread {
+//                                Toast.makeText(
+//                                    requireContext(),
+//                                    "Failed to add GATT service, status: $status",
+//                                    Toast.LENGTH_LONG
+//                                ).show()
+//                            }
                             Log.e("BLE", "Failed to add GATT service, status: $status")
                         }
                     }
@@ -774,7 +774,7 @@ class BluetoothSensorFragment : Fragment(), SensorEventListener, PermissionResul
             service.addCharacteristic(screenshotCharacteristic)
             gattServer.addService(service)
         }   catch (e: Exception) {
-                Toast.makeText(requireContext(), "GATT server setup error: ${e.message}", Toast.LENGTH_LONG).show()
+                Toast.makeText(requireContext(), "Bluetooth setup failed, please restart the app", Toast.LENGTH_LONG).show()
                 Log.e("BLE", "Exception in startGattServer: ${e.message}", e)
         }
     }
@@ -849,7 +849,7 @@ class BluetoothSensorFragment : Fragment(), SensorEventListener, PermissionResul
 
             if (byteArray.size > currentMtu) {
                 Log.e("BLE", "Coordinate data ($byteArray.size bytes) exceeds MTU ($currentMtu bytes)")
-                Toast.makeText(requireContext(), "Coordinate data too large for BLE", Toast.LENGTH_SHORT).show()
+                Toast.makeText(requireContext(), "Unable to send location data, please try again", Toast.LENGTH_SHORT).show()
                 return
             }
 
